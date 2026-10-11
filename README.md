@@ -1,39 +1,41 @@
-🍔🔥 Fast Food Calorie Shock — EDA, Machine Learning & Dashboard
+---
+title: Fast Food Calorie Shock
+emoji: 🍔
+colorFrom: red
+colorTo: yellow
+sdk: gradio
+app_file: app.py
+pinned: false
+---
 
-How long do you have to exercise to burn off a fast-food order? An end-to-end data project on the Kaggle dataset Fast Food Calorie Shock: Food vs Workout Burn (8,000 orders × 23 columns): data audit, EDA, regression and classification, calibrated prediction intervals, an interactive calculator and a Power BI dashboard.
+# 🍔🔥 Fast Food Calorie Shock — How long to burn it off?
 
-🔗 Live demo: <add your Hugging Face Space link> · 📓 Kaggle notebook: <add your Kaggle link>
+**Headline finding:** the same 1,000-kcal order needs roughly twice as many walking minutes for a 50 kg person as for a 100 kg person — burn time depends almost entirely on calories ÷ body weight, not on the chain or the macros.
 
-Headline finding
+An end-to-end project on the Kaggle dataset *Fast Food Calorie Shock: Food vs Workout Burn* (8,000 orders × 23 columns): EDA, data-quality audit, leakage handling, regression and classification, and an interactive calculator.
 
-For the same 1,000–1,200 kcal order, the lightest quarter of consumers needs a median of 303 walking minutes, the heaviest quarter only 195 (−36%). Burn time depends on calories ÷ body weight and on fitness level — not on the chain or the macronutrients.
+## Key results
+| Task | Best model | Result |
+|---|---|---|
+| Walking minutes (regression) | Gradient Boosting + `cal_per_kg` | MAE 3.9 min, R² 0.999 (textbook physics: MAE 17.7; physics + fitness-level MET: MAE 4.3) |
+| `workout_shock_tier` (4 classes) | Logistic Regression | 93.6% accuracy, macro-F1 0.86 |
 
-Key results
-Task	Model	Result
-Walking minutes (regression)	Gradient Boosting + cal_per_kg	MAE 3.9 min, R² 0.999
-Baselines	Textbook physics (MET 3.5) / physics + MET per fitness level	MAE 17.7 / 4.3 min
-workout_shock_tier (4 classes)	Logistic Regression	93.6% accuracy, macro-F1 0.86
-Uncertainty	Quantile GB + conformal calibration	80.5% coverage of an 80% interval
-What I found along the way
-total_calories is clipped at 750 (8.8% of orders) and 3,600 (1.5%) → synthetic-looking data.
-Back-solved MET from calories: walking ≈ 3.5, cycling ≈ 7.4, running ≈ 10.3, HIIT ≈ 12.1; walking MET by fitness level 3.29 / 3.57 / 3.86.
-A 3-parameter physics formula (MAE 4.3) nearly matches the best ML model (MAE 3.9): the value is the formula discovery and the cal_per_kg feature.
-workout_shock_tier is defined by running minutes (cut-offs at 45, 80 and 120).
-Leakage experiment: adding derived/burn-time columns lifts tier accuracy from 93.6% to 100% — a score nobody could reproduce before exercising.
-Highly Trained consumers need ~15% fewer minutes than Sedentary ones; gender and age show no effect.
-Repository structure
-notebooks/   fast_food_calorie_shock_final.ipynb   # full analysis with outputs
-app/         app.py, requirements.txt, *.joblib    # Gradio calculator (saved models)
-dashboard/   *.pbix, screenshots/                  # Power BI dashboard
-Run the app locally
-bash
-cd app
-pip install -r requirements.txt     # scikit-learn pinned to the version used for training
+## What I found along the way
+- `total_calories` is clipped at 750 (8.8% of orders) and 3,600 (1.5%) → synthetic-looking data.
+- Back-solved MET from `total_calories`: walking ≈ 3.5 → burn time is largely `calories / (MET × 0.0175 × weight)`.
+- Chains and meal categories are nearly identical (1,575–1,622 kcal avg) and carry ~0 importance.
+- Leaky columns (other burn times, derived calorie features, the tier itself for regression) were excluded; a leakage experiment shows how much they inflate the scores.
+- Predictions come with a calibrated 80% interval (conformal quantile regression), not just a point estimate.
+
+## Run locally
+```bash
+pip install -r requirements.txt
 python app.py
-Data
+```
+Put `burn_time_model.joblib`, `shock_tier_model.joblib` and `burn_time_interval.joblib` (saved at the end of the notebook) next to `app.py`. The interval file is optional: without it the app shows a single number.
+`requirements.txt` pins `scikit-learn==1.6.1` (the version used on Kaggle when the models were saved). If you retrain elsewhere, pin the version printed by the last notebook cell.
 
-The dataset is not included — download it from the Kaggle page and see the license there.
-
-Limitations
-
-Synthetic-looking data with clipped calories, MET values are population averages, a single train/test split plus 5-fold CV, and interval coverage is guaranteed on average, not per subgroup.
+## Deploy on Hugging Face Spaces
+1. Create a new Space → SDK **Gradio**.
+2. Upload `app.py`, `requirements.txt`, `README.md` and the three `.joblib` files.
+3. Wait for the build, then add the Space link to your CV / GitHub.
